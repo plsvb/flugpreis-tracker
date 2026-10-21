@@ -1,0 +1,30 @@
+name: Flugpreise abfragen
+
+on:
+  schedule:
+    - cron: "7 * * * *"   # jede Stunde zur Minute 7
+  workflow_dispatch:       # manuell startbar über "Run workflow"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tracker
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Europe/Berlin
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preise abfragen und Diagramm bauen
+        run: python3 tracker.py
+      - name: Ergebnisse committen
+        run: |
+          git config user.name "flugpreis-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add prices.csv index.html
+          git diff --cached --quiet || git commit -m "Preise $(date '+%d.%m. %H:%M')"
+          git push
